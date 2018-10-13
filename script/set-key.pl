@@ -8,7 +8,8 @@ use Music::Chord::Note;
 use MIDI::Simple;
 use Try::Tiny;
 
-my $music = Music::Chord::Note->new();
+my $config = Options->new_with_options;
+my $music  = Music::Chord::Note->new();
 
 my $LEDS           = 144;
 my $KEYS           = 80;
@@ -17,7 +18,7 @@ my $STARTING_NOTE  = 4;
 
 my $loop = IO::Async::Loop->new;
 my $fh;
-my $path = '/dev/cu.usbmodem14311';
+my $path = $config->device;
 sysopen( $fh, $path, O_RDWR | O_EXCL, 0755 ) or die qq{Can't open "$path": $!\n};
 
 my $stream = IO::Async::Stream->new(
@@ -57,8 +58,9 @@ my $input_stream = IO::Async::Stream->new(
             $score->n(@notes);
 
             my @note_nums = $score->Notes;
+            my @pixel_nums = map { ( $_ - $STARTING_NOTE ) * $PIXELS_PER_KEY } @note_nums;
 
-            $stream->write( join( ',', @note_nums ) . "\n" );
+            $stream->write( join( ',', @pixel_nums ) . "\n" );
         }
         catch {
             warn $_;
@@ -70,3 +72,18 @@ my $input_stream = IO::Async::Stream->new(
 );
 $loop->add($input_stream);
 $loop->run();
+
+BEGIN {
+
+    package Options;
+    use Moo;
+    use MooX::Options;
+
+    option device => (
+        is       => 'ro',
+        format   => 's',
+        required => 1
+    );
+
+    1;
+}
