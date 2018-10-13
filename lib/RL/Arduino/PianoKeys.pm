@@ -2,7 +2,6 @@ package RL::Arduino::PianoKeys;
 # ABSTRACT: Signalling arduino keys
 
 use strictures 2;
-
 our $VERSION = '0.01';
 
 
