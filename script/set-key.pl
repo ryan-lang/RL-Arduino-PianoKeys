@@ -11,6 +11,26 @@ use Try::Tiny;
 my $config = Options->new_with_options;
 my $music  = Music::Chord::Note->new();
 
+my $KEY_MAP = {
+    4=>0,
+    56=>61,
+    57=>63,
+    58=>65,
+    59=>67,
+    60=>69,
+    61=>71,
+    62=>72,
+    63=>74,
+    64=>76,
+    65=>78,
+    66=>80,
+    67=>82,
+    68=>84,
+    69=>86,
+    70=>88,
+    71=>90
+};
+
 my $LEDS           = 144;
 my $KEYS           = 80;
 my $PIXELS_PER_KEY = 144 / 80;
@@ -58,7 +78,7 @@ my $input_stream = IO::Async::Stream->new(
             $score->n(@notes);
 
             my @note_nums = $score->Notes;
-            my @pixel_nums = map { ( $_ - $STARTING_NOTE ) * $PIXELS_PER_KEY } @note_nums;
+            my @pixel_nums = map { $KEY_MAP->{$_} || 0 } @note_nums;
 
             $stream->write( join( ',', @pixel_nums ) . "\n" );
         }
