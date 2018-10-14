@@ -10,6 +10,7 @@ requires 'Music::Intervals';
 requires 'Music::Chord::Positions';
 requires 'Music::AtonalUtil';
 requires 'JSON::XS';
+requires 'Music::Scales';
  
 on 'test' => sub {
     requires 'Test::More', '0.98';

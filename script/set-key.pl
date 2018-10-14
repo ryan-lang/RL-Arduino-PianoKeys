@@ -11,6 +11,7 @@ use JSON::XS;
 use Music::Chord::Note;
 use Music::Chord::Positions;
 use Music::AtonalUtil;
+use Music::Scales;
 
 my $BASE_COLOR = [ 50,  205, 50 ];
 my $SUS_COLOR  = [ 255, 0,   0 ];
@@ -141,49 +142,39 @@ my $input_stream = IO::Async::Stream->new(
 
         my @write_queue = ( encode_json( { cmd => 'allOff' } ) );
         try {
-            if ( !$req || $req eq '' ) {
-                push @write_queue,
-                    map { join( ',', $_, 255, 255, 255, 0 ) } sort { $a <=> $b } values %{$KEY_MAP};
-            }
-            else {
+            if ($req) {
                 $$buffref =~ s/$req//;
 
                 my ( $tonic, $kind ) = ( $req =~ /([A-G][b#]?)(.+)?/ );
-                my $scale = $Note->scale($tonic);
+                    my $scale = $Note->scale($tonic);
 
-                my @scalic = $Note->chord_num($kind);
+                if ( $config->output eq 'chord' ) {
 
-                #my $permute = $Chord->chord_pos( \@scalic, allow_transpositions => 1, );
-                #p $permute;
+                    my @scalic = $Note->chord_num($kind);
 
-                my $inversions = $Chord->chord_inv( \@scalic );
-                unshift @{$inversions}, [@scalic];
+                    #my $permute = $Chord->chord_pos( \@scalic, allow_transpositions => 1, );
+                    #p $permute;
 
-                p $inversions;
+                    my $inversions = $Chord->chord_inv( \@scalic );
+                    unshift @{$inversions}, [@scalic];
 
-                my @keys = ();
-                foreach my $inversion ( @{$inversions} ) {
-                    my $pos = 60;
+                    p $inversions;
 
-                    # from 60, down to 0
-                    while ( $pos > 0 ) {
-                        push @keys, map { $_ + $pos + $scale } @{$inversion};
-                        $pos -= 12;
-                    }
-
-                    $pos = 60;
-
-                    # from 60, up to max
-                    while ( $pos <= 98 ) {
-                        push @keys, map { $_ + $pos + $scale } @{$inversion};
-                        $pos += 12;
-                    }
+                    my @pixel_nums = transpose_keys( $inversions, $scale );
+                    push @write_queue,
+                        encode_json( { pixels => \@pixel_nums, color => $BASE_COLOR } );
                 }
+                elsif ( $config->output eq 'key' ) {
 
-                p @keys;
+                }
+                elsif ( $config->output eq 'scale' ) {
+                    my @scale = get_scale_nums( $config->scale_mode );
+                    p @scale;
 
-                my @pixel_nums = uniq sort { $a <=> $b } map { $KEY_MAP->{$_} || 0 } uniq(@keys);
-                push @write_queue, encode_json( { pixels => \@pixel_nums, color => $BASE_COLOR } );
+                    my @pixel_nums = transpose_keys( [ \@scale ], $scale );
+                    push @write_queue,
+                        encode_json( { pixels => \@pixel_nums, color => $BASE_COLOR } );
+                }
             }
 
             p @write_queue;
@@ -200,6 +191,36 @@ my $input_stream = IO::Async::Stream->new(
 $loop->add($input_stream);
 $loop->run();
 
+sub transpose_keys {
+    my ( $sets, $scale ) = @_;
+
+    my @keys = ();
+    foreach my $set ( @{$sets} ) {
+        my $pos = 60;
+
+        # from 60, down to 0
+        while ( $pos > 0 ) {
+            push @keys, map { $_ + $pos + $scale } @{$set};
+            $pos -= 12;
+        }
+
+        $pos = 60;
+
+        # from 60, up to max
+        while ( $pos <= 98 ) {
+            push @keys, map { $_ + $pos + $scale } @{$set};
+            $pos += 12;
+        }
+    }
+
+    p @keys;
+
+    my @pixel_nums
+        = uniq sort { $a <=> $b } map { $KEY_MAP->{$_} || 0 } uniq(@keys);
+
+    return \@pixel_nums;
+}
+
 BEGIN {
 
     package Options;
@@ -210,6 +231,18 @@ BEGIN {
         is       => 'ro',
         format   => 's',
         required => 1
+    );
+
+    option output => (
+        is      => 'ro',
+        format  => 's',
+        default => 'chord'
+    );
+
+    option scale_mode => (
+        is      => 'ro',
+        format  => 's',
+        default => 'ionian'
     );
 
     1;
