@@ -164,8 +164,10 @@ my $input_stream = IO::Async::Stream->new(
                     push @write_queue,
                         encode_json( { pixels => \@pixel_nums, color => $BASE_COLOR } );
                 }
-                elsif ( $config->output eq 'key' ) {
+                elsif ( $config->output eq 'note' ) {
                     my @pixel_nums = transpose_keys( [ [$scale] ], $scale );
+                    p @pixel_nums;
+
                     push @write_queue,
                         encode_json( { pixels => \@pixel_nums, color => $BASE_COLOR } );
                 }
