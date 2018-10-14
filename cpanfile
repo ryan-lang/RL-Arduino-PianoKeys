@@ -8,6 +8,7 @@ requires 'MIDI::Simple';
 requires 'MooX::Options';
 requires 'Music::Intervals';
 requires 'Music::Chord::Positions';
+requires 'Music::AtonalUtil';
 requires 'JSON::XS';
  
 on 'test' => sub {

@@ -4,49 +4,54 @@ use IO::Async::Loop;
 use IO::Async::Timer::Countdown;
 use DDP;
 use Fcntl qw( O_RDWR O_EXCL );
-use Music::Chord::Note;
 use MIDI::Simple;
 use Try::Tiny;
-use Music::Chord::Positions;
 use List::Util qw/uniq/;
 use JSON::XS;
+use Music::Chord::Note;
+use Music::Chord::Positions;
+use Music::AtonalUtil;
+
+my $BASE_COLOR = [ 50,  205, 50 ];
+my $SUS_COLOR  = [ 255, 0,   0 ];
 
 my $config = Options->new_with_options;
 my $Chord  = Music::Chord::Positions->new;
 my $Note   = Music::Chord::Note->new();
+my $Util   = Music::AtonalUtil->new();
 
 my $KEY_MAP = {
-    25  => 0,
-    26=>2,
-    27=>4,
-    28=>6,
-    29=>8,
-    30=>10,
-    31=>11,
-    32=>13,
-    33=>15,
-    34=>17,
-    35=>19,
-    36=>21,
-    37=>23,
-    38=>25,
-    39=>27,
-    40=>29,
-    41=>31,
-    42=>33,
-    43=>35,
-    44=>37,
-    45=>39,
-    46=>41,
-    47=>43,
-    48=>45,
-    49=>47,
-    50=>49,
-    51=>51,
-    52=>53,
-    53=>55,
-    54=>57,
-    55=>59,
+    25 => 0,
+    26 => 2,
+    27 => 4,
+    28 => 6,
+    29 => 8,
+    30 => 10,
+    31 => 11,
+    32 => 13,
+    33 => 15,
+    34 => 17,
+    35 => 19,
+    36 => 21,
+    37 => 23,
+    38 => 25,
+    39 => 27,
+    40 => 29,
+    41 => 31,
+    42 => 33,
+    43 => 35,
+    44 => 37,
+    45 => 39,
+    46 => 41,
+    47 => 43,
+    48 => 45,
+    49 => 47,
+    50 => 49,
+    51 => 51,
+    52 => 53,
+    53 => 55,
+    54 => 57,
+    55 => 59,
     56 => 61,
     57 => 63,
     58 => 65,
@@ -63,33 +68,33 @@ my $KEY_MAP = {
     69 => 86,
     70 => 88,
     71 => 90,
-    72=>92,
-    73=>94,
-    74=>96,
-    75=>98,
-    76=>100,
-    77=>102,
-    78=>104,
-    79=>106,
-    80=>108,
-    81=>110,
-    82=>112,
-    83=>114,
-    84=>116,
-    85=>118,
-    86=>120,
-    87=>122,
-    88=>124,
-    89=>126,
-    90=>128,
-    91=>130,
-    92=>132,
-    93=>134,
-    94=>136,
-    95=>138,
-    96=>140,
-    97=>142,
-    98=>143
+    72 => 92,
+    73 => 94,
+    74 => 96,
+    75 => 98,
+    76 => 100,
+    77 => 102,
+    78 => 104,
+    79 => 106,
+    80 => 108,
+    81 => 110,
+    82 => 112,
+    83 => 114,
+    84 => 116,
+    85 => 118,
+    86 => 120,
+    87 => 122,
+    88 => 124,
+    89 => 126,
+    90 => 128,
+    91 => 130,
+    92 => 132,
+    93 => 134,
+    94 => 136,
+    95 => 138,
+    96 => 140,
+    97 => 142,
+    98 => 143
 };
 
 my $LEDS           = 144;
@@ -111,8 +116,9 @@ my $stream = IO::Async::Stream->new(
         if ( length $$buffref ) {
             my ($res) = $$buffref =~ /(.+)(\n|\r)/;
 
-            if($res){
+            if ($res) {
                 $$buffref =~ s/$res//g;
+
                 #p $res;
             }
         }
@@ -133,55 +139,55 @@ my $input_stream = IO::Async::Stream->new(
         my ( $self, $buffref, $eof ) = @_;
         my ($req) = $$buffref =~ /(.+)(\n|\r)/;
 
-        my @write_queue = (encode_json({cmd=>'allOff'}));
+        my @write_queue = ( encode_json( { cmd => 'allOff' } ) );
         try {
-            if(!$req || $req eq ''){
-                push @write_queue, map{ join(',', $_, 255,255,255,0) } sort {$a <=> $b} values %{$KEY_MAP};
-            }else{
+            if ( !$req || $req eq '' ) {
+                push @write_queue,
+                    map { join( ',', $_, 255, 255, 255, 0 ) } sort { $a <=> $b } values %{$KEY_MAP};
+            }
+            else {
                 $$buffref =~ s/$req//;
 
                 my ( $tonic, $kind ) = ( $req =~ /([A-G][b#]?)(.+)?/ );
+                my $scale = $Note->scale($tonic);
 
-                my @scalic     = $Note->chord_num($kind);
+                my @scalic = $Note->chord_num($kind);
+
+                #my $permute = $Chord->chord_pos( \@scalic, allow_transpositions => 1, );
+                #p $permute;
+
                 my $inversions = $Chord->chord_inv( \@scalic );
                 unshift @{$inversions}, [@scalic];
 
-                my $scale = $Note->scale($tonic);
+                p $inversions;
 
-                # my @note_nums = $score->Notes;
-                # my @pixel_nums = map { ( $_ - $STARTING_NOTE ) * $PIXELS_PER_KEY } @note_nums;
-
-                # map { $_ =~ s/#/sharp/g } @notes;
-                # map { $_ =~ s/b/flat/g } @notes;
-
-                # # my $score = MIDI::Simple->new_score();
-                # # $score->Octave(2);
-                # # $score->n(@notes);
-
-                # my @note_nums = $score->Notes;
-                # my $oct       = $score->Octave;
-
-                # $music->process;
-                # p $music;
-
-                # # p $oct;
-                # # p @note_nums;
-
-                my @pixel_nums = ();
+                my @keys = ();
                 foreach my $inversion ( @{$inversions} ) {
-                    my @shifted = map{ $_ + 60 + $scale } @{$inversion};
-                    p @shifted;
-                    my @unmapped_keys = grep{ !(exists $KEY_MAP->{$_}) } @shifted;
-                    p @unmapped_keys;
+                    my $pos = 60;
 
-                    push @pixel_nums, map { $KEY_MAP->{$_} || 0 } @shifted;
+                    # from 60, down to 0
+                    while ( $pos > 0 ) {
+                        push @keys, map { $_ + $pos + $scale } @{$inversion};
+                        $pos -= 12;
+                    }
+
+                    $pos = 60;
+
+                    # from 60, up to max
+                    while ( $pos <= 98 ) {
+                        push @keys, map { $_ + $pos + $scale } @{$inversion};
+                        $pos += 12;
+                    }
                 }
 
-                push @write_queue, encode_json({pixels=>[uniq @pixel_nums], color=>[50,205,50]});
+                p @keys;
+
+                my @pixel_nums = uniq sort { $a <=> $b } map { $KEY_MAP->{$_} || 0 } uniq(@keys);
+                push @write_queue, encode_json( { pixels => \@pixel_nums, color => $BASE_COLOR } );
             }
 
             p @write_queue;
-            map{ $stream->write( "$_\n" ); } @write_queue;
+            map { $stream->write("$_\n"); } @write_queue;
         }
         catch {
             warn $_;
