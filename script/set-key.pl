@@ -146,7 +146,7 @@ my $input_stream = IO::Async::Stream->new(
                 $$buffref =~ s/$req//;
 
                 my ( $tonic, $kind ) = ( $req =~ /([A-G][b#]?)(.+)?/ );
-                    my $scale = $Note->scale($tonic);
+                my $scale = $Note->scale($tonic);
 
                 if ( $config->output eq 'chord' ) {
 
@@ -165,7 +165,9 @@ my $input_stream = IO::Async::Stream->new(
                         encode_json( { pixels => \@pixel_nums, color => $BASE_COLOR } );
                 }
                 elsif ( $config->output eq 'key' ) {
-
+                    my @pixel_nums = transpose_keys( [ [$scale] ], $scale );
+                    push @write_queue,
+                        encode_json( { pixels => \@pixel_nums, color => $BASE_COLOR } );
                 }
                 elsif ( $config->output eq 'scale' ) {
                     my @scale = get_scale_nums( $config->scale_mode );
@@ -216,7 +218,7 @@ sub transpose_keys {
     p @keys;
 
     my @pixel_nums
-        = uniq sort { $a <=> $b } map { $KEY_MAP->{$_} || 0 } uniq(@keys);
+        = uniq sort { $a <=> $b } grep {defined} map { $KEY_MAP->{$_} } uniq(@keys);
 
     return \@pixel_nums;
 }
