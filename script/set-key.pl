@@ -220,7 +220,7 @@ sub transpose_keys {
     my @pixel_nums
         = uniq sort { $a <=> $b } grep {defined} map { $KEY_MAP->{$_} } uniq(@keys);
 
-    return \@pixel_nums;
+    return @pixel_nums;
 }
 
 BEGIN {
