@@ -1,0 +1,19 @@
+{
+    "manifest_version": 2,
+    "name": "Chordify to Keyboard",
+    "description": "This extension will send chordify chords to arduino keyboard",
+    "version": "1.0",
+    "permissions": [
+        "activeTab", "<all_urls>", "webNavigation", "nativeMessaging"
+    ],
+    "content_scripts": [
+    {
+        "js": ["chordify.js"],
+        "matches": ["https://chordify.net/chords/*"],
+        "run_at": "document_end"
+    }],
+    "background":
+    {
+        "scripts": ["background.js"]
+    }
+}

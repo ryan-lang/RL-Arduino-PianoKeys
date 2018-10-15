@@ -1,3 +1,5 @@
+#!/usr/bin/perl
+
 use strictures 2;
 use IO::Async::Stream;
 use IO::Async::Loop;
@@ -138,7 +140,17 @@ my $input_stream = IO::Async::Stream->new(
     read_handle => \*STDIN,
     on_read     => sub {
         my ( $self, $buffref, $eof ) = @_;
-        my ($req) = $$buffref =~ /(.+)(\n|\r)/;
+        $$buffref =~ s/[\n\r\0"]//g;
+        my ($req) = $$buffref =~ /(.+)/;
+        $$buffref =~ s/$req//;
+
+        p $req;
+
+        $req =~ s/min/m/g;
+        $req =~ s/maj//g;
+
+
+        p $req;
 
         my @write_queue = ( encode_json( { cmd => 'allOff' } ) );
         try {
