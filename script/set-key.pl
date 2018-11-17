@@ -1,5 +1,6 @@
 #!/usr/bin/perl
 
+use utf8;
 use strictures 2;
 use IO::Async::Stream;
 use IO::Async::Loop;
@@ -144,10 +145,13 @@ my $input_stream = IO::Async::Stream->new(
         my ($req) = $$buffref =~ /(.+)/;
         $$buffref =~ s/$req//;
 
+        $req =~ s/|//g;
+
         p $req;
 
         $req =~ s/min/m/g;
         $req =~ s/maj//g;
+        $req =~ s/♭/b/g;
 
 
         p $req;

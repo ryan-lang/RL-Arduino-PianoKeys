@@ -1,9 +1,9 @@
 {
     "name": "com.rlang.arduinopiano",
     "description": "Arduino Piano",
-    "path": "/Volumes/User/git/RL-Arduino-PianoKeys/script/run.sh",
+    "path": "/home/rlang/git/RL-Arduino-PianoKeys/script/run-thinkpad.sh",
     "type": "stdio",
     "allowed_origins": [
-        "chrome-extension://mkpllaolnaibpbjpehkkcleinincnfbd/"
+        "chrome-extension://bolabjpoieiikoajjfieehehgphpdddg/"
     ]
 }
